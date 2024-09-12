@@ -1,0 +1,8 @@
+- Deve fazer register e login
+- API ISBN
+- Adicionar quadrinhos com ISBN
+- Vincular quadrinho a usuário
+- Troca de quadrinhos com usuários
+- Perfil de usuários 
+- Avaliações
+- Notificações
