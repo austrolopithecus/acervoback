@@ -1,58 +1,115 @@
-// handlers/exc.handler.go
 package handlers
 
 import (
-    "acervoback/models/requests"
-    "acervoback/services"
-    "github.com/gofiber/fiber/v2"
+	"acervoback/models/requests"
+	"acervoback/models/responses"
+	"acervoback/services"
+	"github.com/gofiber/fiber/v2"
+	"strings"
 )
 
-type ExchangeHandler struct {
-    svc *services.ExchangeService
+type UserHandler struct {
+	svc *services.UserService
 }
 
-func NewExchangeHandler(svc *services.ExchangeService) *ExchangeHandler {
-    return &ExchangeHandler{svc: svc}
+func NewUserHandler(svc *services.UserService) *UserHandler {
+	return &UserHandler{svc: svc}
 }
 
-func (h *ExchangeHandler) RequestExchange(c *fiber.Ctx) error {
-    var body requests.ExchangeRequest
-    if err := c.BodyParser(&body); err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid request"})
-    }
-
-    userIDFrom := c.Locals("userID").(string) // Usuário que está iniciando a troca
-    userIDTo := body.UserIDTo                // Usuário que está recebendo a troca
-
-    exchange, err := h.svc.RequestExchange(body.ComicIDFrom, body.ComicIDTo, userIDFrom, userIDTo)
-    if err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-    }
-
-    return c.Status(fiber.StatusOK).JSON(exchange)
+// Middleware JWT para autenticação
+func (u *UserHandler) JwtMiddleware(c *fiber.Ctx) error {
+	auth := c.Get("Authorization")
+	if auth == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Unauthorized",
+		})
+	}
+	userID, err := u.svc.Jwt(auth)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Unauthorized",
+		})
+	}
+	c.Locals("userID", userID)
+	return c.Next()
 }
 
-func (h *ExchangeHandler) AcceptExchange(c *fiber.Ctx) error {
-    exchangeID := c.Params("id")
-    userID := c.Locals("userID").(string) // Usuário que está aceitando a troca
+// Funções relacionadas ao usuário (registro, login, perfil)
+func (u *UserHandler) Register(c *fiber.Ctx) error {
+	var body requests.UserRegisterRequest
+	err := c.BodyParser(&body)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(responses.CommonResponse{
+			Message: "Invalid request",
+			Success: false,
+		})
+	}
 
-    err := h.svc.AcceptExchange(exchangeID, userID)
-    if err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-    }
+	token, err := u.svc.Register(body)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return c.Status(fiber.StatusConflict).JSON(responses.CommonResponse{
+				Message: "Email already exists",
+				Success: false,
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(responses.CommonResponse{
+			Message: "Internal server error",
+			Success: false,
+		})
+	}
 
-    return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Exchange accepted"})
+	return c.JSON(responses.UserLoginResponse{
+		CommonResponse: responses.CommonResponse{
+			Message: "User registered successfully",
+			Success: true,
+		},
+		Token: token,
+	})
 }
 
-func (h *ExchangeHandler) CompleteExchange(c *fiber.Ctx) error {
-    exchangeID := c.Params("id")
-    userID := c.Locals("userID").(string) // Usuário que está completando a troca
+// Função de login
+func (u *UserHandler) Login(c *fiber.Ctx) error {
+	var body requests.UserLoginRequest
+	err := c.BodyParser(&body)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(responses.CommonResponse{
+			Message: "Invalid request",
+			Success: false,
+		})
+	}
 
-    err := h.svc.CompleteExchange(exchangeID, userID)
-    if err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-    }
+	token, err := u.svc.Login(body)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(responses.CommonResponse{
+			Message: "Invalid credentials",
+			Success: false,
+		})
+	}
 
-    return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Exchange completed"})
+	return c.JSON(responses.UserLoginResponse{
+		CommonResponse: responses.CommonResponse{
+			Message: "User logged in successfully",
+			Success: true,
+		},
+		Token: token,
+	})
 }
 
+// Função para obter os dados do usuário
+func (u *UserHandler) Me(c *fiber.Ctx) error {
+	id := c.Locals("userID").(string)
+	user, err := u.svc.Me(id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(responses.CommonResponse{
+			Message: "Internal server error",
+			Success: false,
+		})
+	}
+
+	return c.JSON(responses.UserMeResponse{
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
+	})
+}
