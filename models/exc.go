@@ -1,17 +1,21 @@
 package models
 
-import (
-	"time"
+type ExchangeStatus string
+
+const (
+    Pending  ExchangeStatus = "pending"
+    Accepted ExchangeStatus = "accepted"
+    Declined ExchangeStatus = "declined"
+    Completed ExchangeStatus = "completed"
 )
 
 type Exchange struct {
-	ID         string    `json:"id" gorm:"primaryKey"`
-	User1ID    string    `json:"user1_id"`
-	User2ID    string    `json:"user2_id"`
-	Comic1ID   string    `json:"comic1_id"`
-	Comic2ID   string    `json:"comic2_id"`
-	Status     string    `json:"status"` // pending, completed, cancelled
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+    ID            string         `json:"id" gorm:"primaryKey"`
+    ComicIDFrom   string         `json:"comic_id_from"`   // Quadrinho que o usuário está oferecendo
+    ComicIDTo     string         `json:"comic_id_to"`     // Quadrinho que o outro usuário está oferecendo
+    UserIDFrom    string         `json:"user_id_from"`    // Usuário que está iniciando a troca
+    UserIDTo      string         `json:"user_id_to"`      // Usuário que está recebendo a oferta
+    Status        ExchangeStatus `json:"status"`          // Status da troca (pendente, aceita, etc.)
 }
+
 
