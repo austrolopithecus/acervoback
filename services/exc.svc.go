@@ -1,85 +1,90 @@
+// services/exchange.svc.go
 package services
 
 import (
-	"acervoback/models"
-	"acervoback/repository"
-	"errors"
-	"github.com/google/uuid"
+    "acervoback/models"
+    "acervoback/repository"
+    "errors"
+    "github.com/google/uuid"
 )
 
 type ExchangeService struct {
-	exchangeRepo repository.ExchangeRepo
-	comicRepo    repository.ComicRepo
-	userRepo     repository.UserRepo
+    exchangeRepo repository.ExchangeRepo
+    comicRepo    repository.ComicRepo
 }
 
-func NewExchangeService(exchangeRepo repository.ExchangeRepo, comicRepo repository.ComicRepo, userRepo repository.UserRepo) *ExchangeService {
-	return &ExchangeService{exchangeRepo: exchangeRepo, comicRepo: comicRepo, userRepo: userRepo}
+func NewExchangeService(exchangeRepo repository.ExchangeRepo, comicRepo repository.ComicRepo) *ExchangeService {
+    return &ExchangeService{
+        exchangeRepo: exchangeRepo,
+        comicRepo:    comicRepo,
+    }
 }
 
-func (s *ExchangeService) RequestExchange(user1ID, user2ID, comic1ID, comic2ID string) (*models.Exchange, error) {
-	// Verificar se os quadrinhos existem e pertencem aos usuários corretos
-	comic1, err := s.comicRepo.FindByID(comic1ID)
-	if err != nil || comic1.UserID != user1ID {
-		return nil, errors.New("invalid comic for user1")
-	}
+func (s *ExchangeService) RequestExchange(comicIDFrom, comicIDTo, userIDFrom, userIDTo string) (*models.Exchange, error) {
+    // Verifica se os quadrinhos existem e pertencem aos usuários
+    comicFrom, err := s.comicRepo.FindByID(comicIDFrom)
+    if err != nil || comicFrom.UserID != userIDFrom {
+        return nil, errors.New("invalid comic or ownership")
+    }
 
-	comic2, err := s.comicRepo.FindByID(comic2ID)
-	if err != nil || comic2.UserID != user2ID {
-		return nil, errors.New("invalid comic for user2")
-	}
+    comicTo, err := s.comicRepo.FindByID(comicIDTo)
+    if err != nil || comicTo.UserID != userIDTo {
+        return nil, errors.New("invalid comic or ownership")
+    }
 
-	// Criar uma nova solicitação de troca
-	exchange := &models.Exchange{
-		ID:       uuid.New().String(),
-		User1ID:  user1ID,
-		User2ID:  user2ID,
-		Comic1ID: comic1ID,
-		Comic2ID: comic2ID,
-		Status:   "pending",
-	}
+    exchange := &models.Exchange{
+        ID:          uuid.New().String(),
+        ComicIDFrom: comicIDFrom,
+        ComicIDTo:   comicIDTo,
+        UserIDFrom:  userIDFrom,
+        UserIDTo:    userIDTo,
+        Status:      models.Pending,
+    }
 
-	err = s.exchangeRepo.Create(exchange)
-	if err != nil {
-		return nil, err
-	}
+    err = s.exchangeRepo.Create(exchange)
+    if err != nil {
+        return nil, err
+    }
 
-	return exchange, nil
+    return exchange, nil
 }
 
-func (s *ExchangeService) CompleteExchange(exchangeID string) error {
-	exchange, err := s.exchangeRepo.FindByID(exchangeID)
-	if err != nil {
-		return err
-	}
+func (s *ExchangeService) AcceptExchange(exchangeID, userID string) error {
+    exchange, err := s.exchangeRepo.FindByID(exchangeID)
+    if err != nil {
+        return err
+    }
 
-	if exchange.Status != "pending" {
-		return errors.New("exchange is not in pending state")
-	}
+    if exchange.UserIDTo != userID || exchange.Status != models.Pending {
+        return errors.New("exchange not allowed")
+    }
 
-	// Trocar a propriedade dos quadrinhos
-	comic1, err := s.comicRepo.FindByID(exchange.Comic1ID)
-	if err != nil {
-		return err
-	}
-	comic1.UserID = exchange.User2ID
-	err = s.comicRepo.Update(&comic1)
-	if err != nil {
-		return err
-	}
+    exchange.Status = models.Accepted
+    return s.exchangeRepo.Update(&exchange)
+}
 
-	comic2, err := s.comicRepo.FindByID(exchange.Comic2ID)
-	if err != nil {
-		return err
-	}
-	comic2.UserID = exchange.User1ID
-	err = s.comicRepo.Update(&comic2)
-	if err != nil {
-		return err
-	}
+func (s *ExchangeService) CompleteExchange(exchangeID, userID string) error {
+    exchange, err := s.exchangeRepo.FindByID(exchangeID)
+    if err != nil {
+        return err
+    }
 
-	// Atualizar o status da troca
-	exchange.Status = "completed"
-	return s.exchangeRepo.Update(&exchange)
+    if exchange.UserIDFrom != userID || exchange.Status != models.Accepted {
+        return errors.New("exchange not allowed")
+    }
+
+    // Trocar os quadrinhos
+    err = s.comicRepo.UpdateOwner(exchange.ComicIDFrom, exchange.UserIDTo)
+    if err != nil {
+        return err
+    }
+
+    err = s.comicRepo.UpdateOwner(exchange.ComicIDTo, exchange.UserIDFrom)
+    if err != nil {
+        return err
+    }
+
+    exchange.Status = models.Completed
+    return s.exchangeRepo.Update(&exchange)
 }
 
