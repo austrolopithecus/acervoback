@@ -1,30 +1,35 @@
 package repository
 
 import (
-	"acervoback/models"
-	"gorm.io/gorm"
+    "acervoback/models"
+    "gorm.io/gorm"
 )
 
-type ReviewRepo interface {
-	Create(review *models.Review) error
-	FindByComicID(comicID string) ([]models.Review, error)
+type ExchangeRepo interface {
+    Create(exchange *models.Exchange) error
+    FindByID(id string) (models.Exchange, error)
+    Update(exchange *models.Exchange) error
 }
 
-type ReviewRepoImpl struct {
-	db *gorm.DB
+type ExchangeRepoImpl struct {
+    db *gorm.DB
 }
 
-func NewReviewRepo(db *gorm.DB) ReviewRepo {
-	return &ReviewRepoImpl{db: db}
+func NewExchangeRepoImpl(db *gorm.DB) ExchangeRepo {
+    return &ExchangeRepoImpl{db: db}
 }
 
-func (r *ReviewRepoImpl) Create(review *models.Review) error {
-	return r.db.Create(review).Error
+func (r *ExchangeRepoImpl) Create(exchange *models.Exchange) error {
+    return r.db.Create(exchange).Error
 }
 
-func (r *ReviewRepoImpl) FindByComicID(comicID string) ([]models.Review, error) {
-	var reviews []models.Review
-	err := r.db.Where("comic_id = ?", comicID).Find(&reviews).Error
-	return reviews, err
+func (r *ExchangeRepoImpl) FindByID(id string) (models.Exchange, error) {
+    var exchange models.Exchange
+    err := r.db.First(&exchange, "id = ?", id).Error
+    return exchange, err
+}
+
+func (r *ExchangeRepoImpl) Update(exchange *models.Exchange) error {
+    return r.db.Save(exchange).Error
 }
 
