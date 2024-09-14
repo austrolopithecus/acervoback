@@ -1,4 +1,3 @@
-// services/review.svc.go
 package services
 
 import (
@@ -33,6 +32,6 @@ func (s *ReviewService) AddReview(userID, comicID string, rating int, comment st
 }
 
 func (s *ReviewService) GetReviewsByComic(comicID string) ([]models.Review, error) {
-    return s.reviewRepo.FindByComic(comicID)
+    return s.reviewRepo.FindByComicID(comicID)
 }
 

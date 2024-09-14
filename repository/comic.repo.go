@@ -8,10 +8,11 @@ import (
 type ComicRepo interface {
 	Create(comic *models.Comic) error
 	FindAll() ([]models.Comic, error)
-	FindByID(id int) (models.Comic, error)
+	FindByID(id string) (models.Comic, error)  // Alterado para string
 	Update(comic *models.Comic) error
 	Delete(id string) error
 	FindByOwner(ownerID string) ([]models.Comic, error)
+	UpdateOwner(comicID, newOwnerID string) error  // Adicionado o método UpdateOwner
 }
 
 type ComicRepoImpl struct {
@@ -28,9 +29,9 @@ func (c *ComicRepoImpl) FindAll() ([]models.Comic, error) {
 	return comics, err
 }
 
-func (c *ComicRepoImpl) FindByID(id int) (models.Comic, error) {
+func (c *ComicRepoImpl) FindByID(id string) (models.Comic, error) {  // Alterado para string
 	var comic models.Comic
-	err := c.db.First(&comic, id).Error
+	err := c.db.First(&comic, "id = ?", id).Error
 	return comic, err
 }
 
@@ -48,6 +49,11 @@ func (c *ComicRepoImpl) FindByOwner(ownerID string) ([]models.Comic, error) {
 	return comics, err
 }
 
+func (c *ComicRepoImpl) UpdateOwner(comicID, newOwnerID string) error {  // Método adicionado
+    return c.db.Model(&models.Comic{}).Where("id = ?", comicID).Update("user_id", newOwnerID).Error
+}
+
 func NewComicRepoImpl(db *gorm.DB) ComicRepo {
 	return &ComicRepoImpl{db: db}
 }
+

@@ -32,11 +32,12 @@ func (r *ReviewRepoImpl) FindByComicID(comicID string) ([]models.Review, error) 
     return reviews, err
 }
 
-func (r *ReviewRepoImpl) FindByID(id string) (models.Review, error) {
-    var review models.Review
-    err := r.db.First(&review, id).Error
-    return review, err
+func (c *ComicRepoImpl) FindByID(id string) (models.Comic, error) {
+    var comic models.Comic
+    err := c.db.First(&comic, "id = ?", id).Error
+    return comic, err
 }
+
 
 func (r *ReviewRepoImpl) Update(review *models.Review) error {
     return r.db.Save(review).Error
