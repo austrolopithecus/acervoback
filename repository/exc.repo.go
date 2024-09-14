@@ -31,10 +31,11 @@ func (e *ExchangeRepoImpl) FindByID(id string) (models.Exchange, error) {
 }
 
 func (e *ExchangeRepoImpl) FindByUser(userID string) ([]models.Exchange, error) {
-	var exchanges []models.Exchange
-	err := e.db.Where("user1_id = ? OR user2_id = ?", userID, userID).Find(&exchanges).Error
-	return exchanges, err
+    var exchanges []models.Exchange
+    err := e.db.Where("user_id_from = ? OR user_id_to = ?", userID, userID).Find(&exchanges).Error
+    return exchanges, err
 }
+
 
 func (e *ExchangeRepoImpl) Update(exchange *models.Exchange) error {
 	return e.db.Save(exchange).Error
