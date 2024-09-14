@@ -32,16 +32,19 @@ func main() {
 	jwtRepo := &repository.JwtRepoImpl{}
 	comicRepo := repository.NewComicRepoImpl(db.DB)
 	exchangeRepo := repository.NewExchangeRepo(db.DB)
+	reviewRepo := repository.NewReviewRepoImpl(db.DB)
 
 	// Inicializa os serviços
 	comicSvc := services.NewComicService(comicRepo)
 	userSvc := services.NewUserService(userRepo, jwtRepo)
-	exchangeSvc := services.NewExchangeService(exchangeRepo, comicRepo, userRepo)
+	exchangeSvc := services.NewExchangeService(exchangeRepo, comicRepo)
+	reviewSvc := services.NewReviewService(reviewRepo)
 
 	// Inicializa os handlers
 	userHandler := handlers.NewUserHandler(userSvc)
 	comicHandler := handlers.NewComicHandler(comicSvc)
 	exchangeHandler := handlers.NewExchangeHandler(exchangeSvc)
+	reviewHandler := handlers.NewReviewHandler(reviewSvc)
 
 	// Rotas de usuário
 	app.Post("/user/register", userHandler.Register)
@@ -54,7 +57,12 @@ func main() {
 
 	// Rotas de troca de quadrinhos
 	app.Post("/exchange", userHandler.JwtMiddleware, exchangeHandler.RequestExchange)
+	app.Post("/exchange/:id/accept", userHandler.JwtMiddleware, exchangeHandler.AcceptExchange)
 	app.Post("/exchange/:id/complete", userHandler.JwtMiddleware, exchangeHandler.CompleteExchange)
+
+	// Rotas de avaliações
+	app.Post("/comic/:id/review", userHandler.JwtMiddleware, reviewHandler.AddReview)
+	app.Get("/comic/:id/reviews", reviewHandler.GetReviews)
 
 	// Rota para Swagger
 	app.Get("/swagger/*", swagger.HandlerDefault)
