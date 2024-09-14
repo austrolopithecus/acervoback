@@ -20,7 +20,6 @@ func (h *ExchangeHandler) RequestExchange(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid request"})
 	}
 
-	// Verifique se os campos corretos estão presentes no request
 	exchange, err := h.svc.RequestExchange(body.ComicIDFrom, body.ComicIDTo, body.UserIDFrom, body.UserIDTo)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
