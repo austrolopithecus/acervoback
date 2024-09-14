@@ -67,7 +67,10 @@ func main() {
 	// Rota para Swagger
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
-	// Inicia o servidor
-	_ = app.Listen(":3000")
+	// Inicia o servidor e adiciona tratamento de erro
+	err := app.Listen(":3000")
+	if err != nil {
+		log.Fatal().Err(err).Msg("Erro ao iniciar o servidor")
+	}
 }
 

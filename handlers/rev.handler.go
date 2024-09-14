@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"acervoback/models/requests"
 	"acervoback/services"
 	"github.com/gofiber/fiber/v2"
 )
@@ -15,15 +16,18 @@ func NewReviewHandler(svc *services.ReviewService) *ReviewHandler {
 
 // Método para adicionar uma nova review
 func (h *ReviewHandler) AddReview(c *fiber.Ctx) error {
-	var body struct {
-		ComicID string `json:"comic_id"`
-		UserID  string `json:"user_id"`
-		Rating  int    `json:"rating"`
-		Comment string `json:"comment"`
-	}
-
+	var body requests.ReviewRequest
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid request"})
+	}
+
+	// Validações básicas
+	if body.Rating < 1 || body.Rating > 5 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Rating must be between 1 and 5"})
+	}
+
+	if body.Comment == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Comment cannot be empty"})
 	}
 
 	review, err := h.svc.AddReview(body.UserID, body.ComicID, body.Rating, body.Comment)
