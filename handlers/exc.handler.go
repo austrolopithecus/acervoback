@@ -28,6 +28,18 @@ func (h *ExchangeHandler) RequestExchange(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(exchange)
 }
 
+func (h *ExchangeHandler) AcceptExchange(c *fiber.Ctx) error {
+	exchangeID := c.Params("id")
+	userID := c.Locals("userID").(string)
+
+	err := h.svc.AcceptExchange(exchangeID, userID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Exchange accepted"})
+}
+
 func (h *ExchangeHandler) CompleteExchange(c *fiber.Ctx) error {
 	exchangeID := c.Params("id")
 	userID := c.Locals("userID").(string)
