@@ -54,3 +54,42 @@ Once the environment is set up, run the application:
 
 ```bash
 go run main.go
+
+Project Structure
+
+The project follows the DDD (Domain-Driven Design) approach and is divided into the following layers:
+
+    handlers/: Contains the HTTP handlers responsible for processing incoming requests and sending responses.
+
+    middlewares/: Middleware components, such as JWT authentication, which are used to secure endpoints.
+
+    services/: Contains the business logic of the application. It acts as an intermediary between the handlers and the repository layer.
+
+    repositories/: Data access layer that interacts with the PostgreSQL database using GORM.
+
+    models/: Defines the core entities and database models such as User, Comic, Exchange, and Review.
+
+    requests/ & responses/: Defines the structure for incoming requests and outgoing responses to standardize communication between the API and the client.
+
+API Endpoints
+User Management
+
+    Register a new user: POST /user/register
+    Login: POST /user/login
+    Get current user information: GET /user/me (requires JWT)
+
+Comic Book Management
+
+    Add a comic to the collection by ISBN: PUT /comic
+    View all comics for the logged-in user: GET /comic
+
+Comic Trading
+
+    Request a comic trade: POST /exchange
+    Accept a trade request: POST /exchange/:id/accept
+    Complete a trade: POST /exchange/:id/complete
+
+Reviews
+
+    Add a review to a comic: POST /comic/:id/review
+    Get all reviews for a comic: GET /comic/:id/reviews
