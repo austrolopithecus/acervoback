@@ -27,7 +27,6 @@ func (s *ExchangeService) RequestExchange(comicID, requesterID, ownerID string) 
 	if err != nil || comic.UserID != ownerID {
 		return nil, errors.New("invalid comic or ownership")
 	}
-
 	exchange := &models.Exchange{
 		ID:          uuid.New().String(),
 		ComicID:     comicID,
@@ -70,4 +69,12 @@ func (s *ExchangeService) DeclineExchange(exchangeID, userID string) error {
 
 	exchange.Status = models.Declined
 	return s.exchangeRepo.Update(&exchange)
+}
+
+func (s *ExchangeService) ListExchanges(userID string) ([]models.Exchange, error) {
+	excs, err := s.exchangeRepo.FindByUser(userID)
+	if err != nil {
+		return nil, err
+	}
+	return excs, nil
 }

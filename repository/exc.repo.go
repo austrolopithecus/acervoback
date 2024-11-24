@@ -2,6 +2,7 @@ package repository
 
 import (
 	"acervoback/models"
+
 	"gorm.io/gorm"
 )
 
@@ -26,7 +27,7 @@ func (e *ExchangeRepoImpl) Create(exchange *models.Exchange) error {
 
 func (e *ExchangeRepoImpl) FindByID(id string) (models.Exchange, error) {
 	var exchange models.Exchange
-	err := e.db.First(&exchange, id).Error
+	err := e.db.Where("id = ?", id).Find(&exchange).Error
 	return exchange, err
 }
 

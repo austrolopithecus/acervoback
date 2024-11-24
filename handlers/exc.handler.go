@@ -55,3 +55,12 @@ func (h *ExchangeHandler) DeclineExchange(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Exchange declined"})
 }
+
+func (e *ExchangeHandler) ListExchanges(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+	excs, err := e.svc.ListExchanges(userID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+	}
+	return c.Status(fiber.StatusOK).JSON(excs)
+}

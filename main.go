@@ -5,10 +5,11 @@ import (
 	"acervoback/handlers"
 	"acervoback/repository"
 	"acervoback/services"
+	"os"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog/log"
-	"os"
 )
 
 func main() {
@@ -64,6 +65,7 @@ func main() {
 
 	app.Put("/comic", userHandler.JwtMiddleware, comicHandler.CreateComic)
 	app.Get("/comic", userHandler.JwtMiddleware, comicHandler.GetComics)
+	app.Get("/exchange", userHandler.JwtMiddleware, exchangeHandler.ListExchanges)
 
 	app.Post("/exchange", userHandler.JwtMiddleware, exchangeHandler.RequestExchange)
 	app.Patch("/exchange/:id", userHandler.JwtMiddleware, exchangeHandler.AcceptExchange)
