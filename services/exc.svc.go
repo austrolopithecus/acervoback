@@ -5,6 +5,7 @@ import (
 	"acervoback/repository"
 	"errors"
 	"fmt"
+
 	"github.com/google/uuid"
 )
 
@@ -46,11 +47,11 @@ func (s *ExchangeService) RequestExchange(comicID, requesterID, ownerID string) 
 func (s *ExchangeService) AcceptExchange(exchangeID string, userID string) error {
 	exchange, err := s.exchangeRepo.FindByID(exchangeID)
 	if err != nil {
-		return fmt.Errorf("Exchange não encontrado: %w", err)
+		return fmt.Errorf("exchange não encontrado: %w", err)
 	}
 
 	if exchange.OwnerID != userID {
-		return fmt.Errorf("Apenas o proprietário pode aceitar a troca")
+		return fmt.Errorf("apenas o proprietário pode aceitar a troca")
 	}
 
 	exchange.Status = models.Accepted

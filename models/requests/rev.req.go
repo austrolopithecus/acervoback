@@ -4,7 +4,6 @@ package requests
 type ReviewRequest struct {
 	ComicID string `json:"comic_id"`
 	UserID  string `json:"user_id"`
-	Rating  int    `json:"rating"`
 	Comment string `json:"comment"`
+	Rating  int    `json:"rating"`
 }
-
