@@ -3,7 +3,7 @@ tmp_dir = "tmp"
 
 [build]
 # Array of commands to run before each build
-pre_cmd = ["swag init"]
+pre_cmd = [""]
 # Just plain old shell command. You could use `make` as well.
 cmd = "go build -o ./tmp/main.exe ."
 # Array of commands to run after ^C
@@ -11,13 +11,20 @@ post_cmd = ["echo 'hello air' > post_cmd.txt"]
 # Binary file yields from `cmd`.
 bin = "tmp/main.exe"
 # Customize binary, can setup environment variables when run your app.
-full_bin = " ./tmp/main"
+full_bin = "./tmp/main.exe"
 # Add additional arguments when running binary (bin/full_bin). Will run './tmp/main hello world'.
 args_bin = ["hello", "world"]
 # Watch these filename extensions.
 include_ext = ["go", "tpl", "tmpl", "html"]
 # Ignore these filename extensions or directories.
-exclude_dir = ["assets", "tmp", "vendor", "frontend/node_modules", "docs/", "data/"]
+exclude_dir = [
+  "assets",
+  "tmp",
+  "vendor",
+  "frontend/node_modules",
+  "docs/",
+  "data/",
+]
 # Watch these directories if you specified.
 include_dir = []
 # Watch these files.

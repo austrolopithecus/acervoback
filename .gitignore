@@ -10,3 +10,4 @@ devenv.local.nix
 .idea
 tmp/
 .env
+*.txt
