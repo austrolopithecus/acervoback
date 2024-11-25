@@ -55,10 +55,13 @@ func (s *ComicService) Create(userID string, body requests.NewComicRequest) (*mo
 				if volumeInfo != nil {
 					comic.Title = volumeInfo["title"].(string)
 					comic.Author = volumeInfo["authors"].([]interface{})[0].(string)
-					imageLinks := volumeInfo["imageLinks"].(map[string]string)
-					comic.CoverURL = imageLinks["thumbnail"]
-					comic.Publisher = volumeInfo["publisher"].(string)
-					comic.Description = volumeInfo["description"].(string)
+					imageLinks, ok := volumeInfo["imageLinks"].(map[string]string)
+					if ok {
+						comic.CoverURL = imageLinks["thumbnail"]
+						comic.Publisher = volumeInfo["publisher"].(string)
+						comic.Description = volumeInfo["description"].(string)
+					}
+
 				}
 			}
 		}
