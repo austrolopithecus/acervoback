@@ -12,22 +12,25 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const googleBooksAPI = "https://www.googleapis.com/books/v1/volumes"
+// URL base da Open Library API
+const openLibraryAPI = "https://openlibrary.org/api/books"
 
+// ComicService estrutura para o serviço de quadrinhos
 type ComicService struct {
-	repo   repository.ComicRepo
-	c      *resty.Client
-	apiKey string
+	repo repository.ComicRepo
+	c    *resty.Client
 }
 
-func NewComicService(repo repository.ComicRepo, apiKey string) *ComicService {
-	return &ComicService{
-		repo:   repo,
-		c:      resty.New(),
-		apiKey: apiKey,
+// Função para garantir que um valor seja uma string e evitar falhas
+func getStringFromMap(m map[string]interface{}, key string) string {
+	value, ok := m[key]
+	if !ok {
+		return ""
 	}
+	return value.(string)
 }
 
+// Função para criar um quadrinho
 func (s *ComicService) Create(userID string, body requests.NewComicRequest) (*models.Comic, error) {
 	// Validação do ISBN
 	if len(body.ISBN) != 10 && len(body.ISBN) != 13 {
@@ -35,6 +38,7 @@ func (s *ComicService) Create(userID string, body requests.NewComicRequest) (*mo
 		return nil, errors.New("ISBN inválido ou malformado")
 	}
 
+	// Inicializando comic com dados padrão
 	comic := &models.Comic{
 		ID:     uuid.New().String(),
 		Title:  "Título não especificado",
@@ -42,31 +46,54 @@ func (s *ComicService) Create(userID string, body requests.NewComicRequest) (*mo
 		UserID: userID,
 	}
 
-	// Tentar buscar dados na API
-	url := fmt.Sprintf("%s?q=isbn:%s&key=%s", googleBooksAPI, body.ISBN, s.apiKey)
+	// Construir a URL para consultar a Open Library API
+	url := fmt.Sprintf("%s?bibkeys=ISBN:%s&format=json&jscmd=data", openLibraryAPI, body.ISBN)
 	resp, err := s.c.R().Get(url)
-	if err == nil {
-		// Processar resposta da API
+	if err != nil {
+		log.Warn().Msg("Erro ao consultar Open Library API, continuando com dados padrões")
+	} else {
 		var result map[string]interface{}
-		if json.Unmarshal(resp.Body(), &result) == nil {
-			items, ok := result["items"].([]interface{})
-			if ok && len(items) > 0 {
-				volumeInfo := items[0].(map[string]interface{})["volumeInfo"].(map[string]interface{})
-				if volumeInfo != nil {
-					comic.Title = volumeInfo["title"].(string)
-					comic.Author = volumeInfo["authors"].([]interface{})[0].(string)
-					imageLinks := volumeInfo["imageLinks"].(map[string]string)
-					comic.CoverURL = imageLinks["thumbnail"]
-					comic.Publisher = volumeInfo["publisher"].(string)
-					comic.Description = volumeInfo["description"].(string)
-				}
+		if err := json.Unmarshal(resp.Body(), &result); err != nil {
+			log.Err(err).Msg("Erro ao processar a resposta da API")
+			return nil, err
+		}
+
+		key := fmt.Sprintf("ISBN:%s", body.ISBN)
+		item, ok := result[key].(map[string]interface{})
+		if !ok || item == nil {
+			log.Warn().Str("isbn", body.ISBN).Msg("Dados não encontrados na resposta da API")
+			return nil, errors.New("dados não encontrados na Open Library API")
+		}
+
+		comic.Title = getStringFromMap(item, "title")
+
+		if authors, ok := item["authors"].([]interface{}); ok && len(authors) > 0 {
+			if author, ok := authors[0].(map[string]interface{}); ok {
+				comic.Author = getStringFromMap(author, "name")
 			}
 		}
-	} else {
-		log.Warn().Msg("Erro ao consultar API, continuando com dados padrões")
+
+		if publishers, ok := item["publishers"].([]interface{}); ok && len(publishers) > 0 {
+			comic.Publisher = getStringFromMap(publishers[0].(map[string]interface{}), "name")
+		}
+
+		if pages, ok := item["number_of_pages"].(float64); ok {
+			comic.Pages = int(pages)
+		}
+
+		comic.Description = getStringFromMap(item, "description")
+
+		comic.Edition = getStringFromMap(item, "edition_name")
+
+		if genres, ok := item["subjects"].([]interface{}); ok && len(genres) > 0 {
+			comic.Genre = getStringFromMap(genres[0].(map[string]interface{}), "name")
+		}
+
+		if cover, ok := item["cover"].(map[string]interface{}); ok {
+			comic.CoverURL = getStringFromMap(cover, "medium")
+		}
 	}
 
-	// Salvar comic no banco
 	if err := s.repo.Create(comic); err != nil {
 		log.Err(err).Msg("Erro ao salvar comic no banco de dados")
 		return nil, err

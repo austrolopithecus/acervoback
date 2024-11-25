@@ -4,12 +4,14 @@ type Comic struct {
 	ID          string `json:"id" gorm:"primaryKey"`
 	Title       string `json:"title"`
 	Author      string `json:"author"`
-	Publisher   string `json:"publisher"`
-	CoverURL    string `json:"cover_url"`
-	Description string `json:"description"`
-	Year        int    `json:"year"`
-	Owner       User   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	UserID      string `json:"user_id"`
+	Publisher   string `json:"publisher"`
+	Description string `json:"description"`
+	Genre       string `json:"genre"`
+	CoverURL    string `json:"cover_url"`
+	Pages       int    `json:"pages"`
+	Edition     string `json:"edition"`
+	Year        int    `json:"year"`
 }
 
 type Comics []Comic
