@@ -5,6 +5,7 @@ import (
 	"acervoback/handlers"
 	"acervoback/repository"
 	"acervoback/services"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
@@ -33,7 +34,7 @@ func main() {
 
 	// Inicializar Fiber
 	app := fiber.New()
-
+	app.Use(cors.New())
 	// Inicializar repositórios
 	userRepo := repository.NewUserRepo(db.DB)
 	comicRepo := repository.NewComicRepoImpl(db.DB)
